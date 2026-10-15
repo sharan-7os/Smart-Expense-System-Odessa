@@ -54,6 +54,18 @@ exports.getBalancesAndSettlements = async (req, res) => {
     // If expenses were added or edited after a payment, flag it so user is aware
     const totalCompletedPaise = completedSettlements.reduce((sum, s) => sum + s.amountPaise, 0);
 
+    // Check if all suggested settlements are matched by completed records
+    const isSettled =
+      suggestedSettlements.length === 0 ||
+      suggestedSettlements.every((s) =>
+        completedSettlements.some(
+          (c) =>
+            String(c.from?._id || c.from) === String(s.fromId) &&
+            String(c.to?._id || c.to) === String(s.toId) &&
+            c.amountPaise === s.amountPaise
+        )
+      );
+
     res.json({
       success: true,
       data: {
@@ -69,6 +81,7 @@ exports.getBalancesAndSettlements = async (req, res) => {
           totalSpendPaise,
           perPersonAverage:
             participants.length > 0 ? toRupees(Math.round(totalSpendPaise / participants.length)) : 0,
+          isSettled,
         },
         balances,
         suggestedSettlements,
